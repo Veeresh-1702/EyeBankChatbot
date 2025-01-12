@@ -1,0 +1,5 @@
+/node_modules
+/frontend/node_modules
+/backend/node_modules
+.env
+eye-bank-chatbot-kubc-18e7b5aa0853.json
