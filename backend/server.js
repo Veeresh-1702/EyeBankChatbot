@@ -17,7 +17,7 @@ app.use(express.static(path.join(__dirname, '../frontend')));
 // Function to retrieve access token using Google API key stored in .env
 async function getAccessToken() {
     try {
-        const keyFilePath = path.join(__dirname, process.env.GOOGLE_API_KEY_PATH);
+        const keyFile = JSON.parse(process.env.GOOGLE_API_CREDENTIALS_JSON); // No file path needed
         const keyFile = JSON.parse(fs.readFileSync(keyFilePath, 'utf8'));
 
         const auth = new GoogleAuth({
