@@ -17,8 +17,8 @@ app.use(express.static(path.join(__dirname, '../frontend')));
 // Function to retrieve access token using Google API key stored in .env
 async function getAccessToken() {
     try {
-        const keyFile = JSON.parse(process.env.GOOGLE_API_CREDENTIALS_JSON); // No file path needed
-        const keyFile = JSON.parse(fs.readFileSync(keyFilePath, 'utf8'));
+        // Retrieve the secret JSON string and parse it
+        const keyFile = JSON.parse(process.env.GOOGLE_API_CREDENTIALS_JSON);  // Parses the JSON string into an object
 
         const auth = new GoogleAuth({
             credentials: keyFile,
@@ -34,6 +34,7 @@ async function getAccessToken() {
         throw error;  // Re-throw to handle in the endpoint
     }
 }
+
 // Route to handle the chatbot message
 app.post('/api/message', async (req, res) => {
     try {
