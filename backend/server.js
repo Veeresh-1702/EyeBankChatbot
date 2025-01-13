@@ -1,10 +1,9 @@
-require('dotenv').config(); // Load environment variables from .env file
+require('dotenv').config();  // Load environment variables from .env file
 const express = require('express');
 const bodyParser = require('body-parser');
 const { google } = require('googleapis');
-const { GoogleAuth } = require('google-auth-library'); // Explicitly require GoogleAuth
+const { GoogleAuth } = require('google-auth-library');
 const path = require('path');
-const fs = require('fs');
 const { v4: uuidv4 } = require('uuid');
 
 const app = express();
@@ -16,10 +15,9 @@ app.use(express.static(path.join(__dirname, '../frontend')));
 // Function to retrieve access token using Google API credentials stored in .env
 async function getAccessToken() {
     try {
-        // Retrieve the secret JSON string and parse it
-        const keyFile = JSON.parse(process.env.GOOGLE_API_CREDENTIALS_JSON); // Parses the JSON string into an object
+        const keyFile = JSON.parse(process.env.GOOGLE_API_CREDENTIALS_JSON);  // Parses the JSON string into an object
 
-        const auth = new GoogleAuth({ // Use GoogleAuth from google-auth-library
+        const auth = new GoogleAuth({
             credentials: keyFile,
             scopes: ['https://www.googleapis.com/auth/cloud-platform'],
         });
@@ -34,6 +32,7 @@ async function getAccessToken() {
     }
 }
 
+// Route to handle the chatbot message
 app.post('/api/message', async (req, res) => {
     try {
         const userMessage = req.body.message;
@@ -62,7 +61,13 @@ app.post('/api/message', async (req, res) => {
         });
 
         const data = await response.json();
-        let botReply = data.queryResult.fulfillmentText;
+
+        if (!data.queryResult) {
+            console.error('Error: queryResult is missing in the response');
+            return res.status(500).json({ error: 'Invalid response from Dialogflow' });
+        }
+
+        let botReply = data.queryResult.fulfillmentText || 'I am not sure how to respond.';
 
         // Convert URLs in botReply to clickable links
         botReply = botReply.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank">$1</a>');
