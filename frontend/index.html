@@ -62,7 +62,13 @@
     function sendMessage(message, sender) {
         const messageDiv = document.createElement('div');
         messageDiv.classList.add(sender === 'user' ? 'user-message' : 'bot-message');
-        messageDiv.textContent = message;
+
+        if (sender === 'bot') {
+            messageDiv.innerHTML = message; // Use innerHTML to render HTML content for bot messages
+        } else {
+            messageDiv.textContent = message; // Use textContent for user messages to prevent HTML injection
+        }
+
         chatBox.appendChild(messageDiv);
         chatBox.scrollTop = chatBox.scrollHeight;
     }
