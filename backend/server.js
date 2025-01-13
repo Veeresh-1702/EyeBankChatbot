@@ -2,10 +2,10 @@ require('dotenv').config(); // Load environment variables from .env file
 const express = require('express');
 const bodyParser = require('body-parser');
 const { google } = require('googleapis');
+const { GoogleAuth } = require('google-auth-library'); // Explicitly require GoogleAuth
 const path = require('path');
 const fs = require('fs');
 const { v4: uuidv4 } = require('uuid');
-const fetch = require('node-fetch'); // Import fetch
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -13,21 +13,13 @@ const PORT = process.env.PORT || 3000;
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, '../frontend')));
 
-// Function to retrieve access token using Google API key stored in .env or as a file
+// Function to retrieve access token using Google API credentials stored in .env
 async function getAccessToken() {
     try {
-        // Check if GOOGLE_API_CREDENTIALS_JSON is available as an environment variable
-        const keyFile =
-            process.env.GOOGLE_API_CREDENTIALS_JSON
-                ? JSON.parse(process.env.GOOGLE_API_CREDENTIALS_JSON)
-                : JSON.parse(
-                      fs.readFileSync(
-                          path.join(__dirname, process.env.GOOGLE_API_CREDENTIALS_FILE_PATH),
-                          'utf8'
-                      )
-                  );
+        // Retrieve the secret JSON string and parse it
+        const keyFile = JSON.parse(process.env.GOOGLE_API_CREDENTIALS_JSON); // Parses the JSON string into an object
 
-        const auth = new google.auth.GoogleAuth({
+        const auth = new GoogleAuth({ // Use GoogleAuth from google-auth-library
             credentials: keyFile,
             scopes: ['https://www.googleapis.com/auth/cloud-platform'],
         });
@@ -42,12 +34,14 @@ async function getAccessToken() {
     }
 }
 
-// Route to handle the chatbot message
 app.post('/api/message', async (req, res) => {
     try {
         const userMessage = req.body.message;
-        const sessionId = uuidv4(); // Generate a unique session ID
+        const sessionId = uuidv4(); // Generate a unique session ID for each request
         const token = await getAccessToken();
+
+        // Dynamically import node-fetch
+        const { default: fetch } = await import('node-fetch');
 
         const url = `https://dialogflow.googleapis.com/v2/projects/${process.env.DIALOGFLOW_PROJECT_ID}/agent/sessions/${sessionId}:detectIntent`;
 
