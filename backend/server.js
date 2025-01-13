@@ -1,10 +1,12 @@
-require('dotenv').config();  // Load environment variables from .env file
+require('dotenv').config(); // Load environment variables from .env file
 const express = require('express');
 const bodyParser = require('body-parser');
 const { google } = require('googleapis');
 const { GoogleAuth } = require('google-auth-library');
 const path = require('path');
+const fs = require('fs');
 const { v4: uuidv4 } = require('uuid');
+const fetch = require('node-fetch'); // Import fetch
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -12,10 +14,11 @@ const PORT = process.env.PORT || 3000;
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, '../frontend')));
 
-// Function to retrieve access token using Google API credentials stored in .env
+// ✅ API/ENVIRONMENT HANDLING from the **First File**
 async function getAccessToken() {
     try {
-        const keyFile = JSON.parse(process.env.GOOGLE_API_CREDENTIALS_JSON);  // Parses the JSON string into an object
+        // Retrieve Google API credentials from .env
+        const keyFile = JSON.parse(process.env.GOOGLE_API_CREDENTIALS_JSON);
 
         const auth = new GoogleAuth({
             credentials: keyFile,
@@ -24,25 +27,23 @@ async function getAccessToken() {
 
         const client = await auth.getClient();
         const accessToken = await client.getAccessToken();
-        console.log('Access token retrieved successfully');
+
+        console.log('✅ Access token retrieved successfully');
         return accessToken.token;
     } catch (error) {
-        console.error('Error retrieving access token:', error);
-        throw error;
+        console.error('❌ Error retrieving access token:', error);
+        throw error; // Re-throw error for debugging
     }
 }
 
-// Route to handle the chatbot message
+// ✅ Merging the **Other Changes** from the Second File
 app.post('/api/message', async (req, res) => {
     try {
         const userMessage = req.body.message;
-        const sessionId = uuidv4(); // Generate a unique session ID for each request
+        const sessionId = uuidv4(); // Generate a unique session ID
         const token = await getAccessToken();
 
-        // Dynamically import node-fetch
-        const { default: fetch } = await import('node-fetch');
-
-        const url = `https://dialogflow.googleapis.com/v2/projects/${process.env.DIALOGFLOW_PROJECT_ID}/agent/sessions/${sessionId}:detectIntent`;
+        const url = `https://dialogflow.googleapis.com/v2/projects/eye-bank-chatbot-kubc/agent/sessions/${sessionId}:detectIntent`;
 
         const response = await fetch(url, {
             method: 'POST',
@@ -61,24 +62,23 @@ app.post('/api/message', async (req, res) => {
         });
 
         const data = await response.json();
+        console.log('📥 Full Dialogflow Response:', JSON.stringify(data, null, 2)); // Debugging log
 
         if (!data.queryResult) {
-            console.error('Error: queryResult is missing in the response');
-            return res.status(500).json({ error: 'Invalid response from Dialogflow' });
+            console.error('❌ Error: queryResult is missing in the response');
+            return res.status(500).json({ error: 'Invalid response from Dialogflow', fullResponse: data });
         }
 
         let botReply = data.queryResult.fulfillmentText || 'I am not sure how to respond.';
-
-        // Convert URLs in botReply to clickable links
         botReply = botReply.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank">$1</a>');
 
         res.json({ botReply });
     } catch (error) {
-        console.error('Error processing message:', error);
+        console.error('❌ Error processing message:', error);
         res.status(500).json({ error: 'Failed to process message' });
     }
 });
 
 app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+    console.log(`🚀 Server is running on port ${PORT}`);
 });
